@@ -1,0 +1,357 @@
+/* ============================================================================
+   LyricSync — Styles
+   Dark-mode-first, responsive, music-app aesthetic.
+   Uses CSS custom properties so the theme is easy to tweak.
+   ============================================================================ */
+
+:root {
+  --bg-0: #0a0a0f;          /* page background */
+  --bg-1: #12121a;          /* panels */
+  --bg-2: #1b1b26;          /* raised elements / inputs */
+  --bg-3: #24243100;        /* subtle */
+  --border: #2a2a3a;
+  --text-0: #f2f2f7;        /* primary text */
+  --text-1: #a8a8bd;        /* secondary text */
+  --text-2: #6b6b82;        /* muted */
+  --accent: #8b5cf6;        /* violet */
+  --accent-2: #ec4899;      /* pink */
+  --accent-glow: rgba(139, 92, 246, 0.35);
+  --success: #34d399;
+  --danger: #f87171;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(139, 92, 246, 0.12), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, rgba(236, 72, 153, 0.10), transparent 55%),
+    var(--bg-0);
+  color: var(--text-0);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+/* ------------------------------- Header ---------------------------------- */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.logo {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--gradient);
+  display: grid; place-items: center;
+  box-shadow: 0 8px 24px var(--accent-glow);
+  flex-shrink: 0;
+}
+.logo svg { width: 26px; height: 26px; }
+.brand h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.4px;
+  background: linear-gradient(90deg, #fff, #c9b8ff);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.brand p { margin: 2px 0 0; color: var(--text-1); font-size: 13px; }
+
+.tagline {
+  color: var(--text-1);
+  font-size: 15px;
+  margin: 18px 0 28px;
+  line-height: 1.6;
+  max-width: 720px;
+}
+
+/* ------------------------------- Panels ---------------------------------- */
+.panel {
+  background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.section-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-1);
+  margin: 0 0 14px;
+}
+.badge-opt {
+  font-size: 10px; font-weight: 700;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 2px 7px; border-radius: 20px;
+  text-transform: none; letter-spacing: 0;
+}
+
+/* --------------------------- Drag & drop zone ---------------------------- */
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 34px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s, transform .1s;
+  background: var(--bg-2);
+}
+.dropzone:hover { border-color: var(--accent); }
+.dropzone.drag {
+  border-color: var(--accent);
+  background: rgba(139, 92, 246, 0.08);
+  transform: scale(1.01);
+}
+.dropzone .icon { font-size: 34px; margin-bottom: 8px; }
+.dropzone .hint { color: var(--text-1); font-size: 14px; }
+.dropzone .sub { color: var(--text-2); font-size: 12px; margin-top: 6px; }
+.file-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 12px;
+  background: rgba(52, 211, 153, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.divider-or {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-2); font-size: 12px;
+  margin: 16px 0;
+}
+.divider-or::before, .divider-or::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ------------------------------- Inputs ---------------------------------- */
+label.field-label {
+  display: block; font-size: 13px; color: var(--text-1);
+  margin-bottom: 6px;
+}
+input[type="text"], input[type="url"], textarea {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-0);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color .2s, box-shadow .2s;
+  resize: vertical;
+}
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+textarea { min-height: 150px; line-height: 1.5; }
+
+/* ------------------------------- Buttons --------------------------------- */
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform .1s, opacity .2s, background .2s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary {
+  background: var(--gradient);
+  color: white;
+  box-shadow: 0 8px 24px var(--accent-glow);
+}
+.btn-primary:hover:not(:disabled) { opacity: .92; }
+.btn-ghost {
+  background: var(--bg-2);
+  color: var(--text-0);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--accent); }
+.btn-lg { padding: 15px 28px; font-size: 15px; width: 100%; margin-top: 8px; }
+
+.mode-note {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-1);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 10px 14px;
+  line-height: 1.5;
+}
+.mode-note strong { color: var(--text-0); }
+
+/* --------------------------- Progress / loading -------------------------- */
+.progress-wrap { margin-top: 26px; }
+.progress-steps { display: flex; flex-direction: column; gap: 12px; }
+.step {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-2); font-size: 14px;
+  transition: color .3s;
+}
+.step.active { color: var(--text-0); }
+.step.done { color: var(--success); }
+.step .dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border);
+  display: grid; place-items: center; flex-shrink: 0;
+  font-size: 12px;
+}
+.step.active .dot { border-color: var(--accent); }
+.step.done .dot { border-color: var(--success); background: rgba(52,211,153,.15); }
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--accent);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.progress-bar {
+  height: 6px; border-radius: 3px; background: var(--bg-2);
+  overflow: hidden; margin-top: 20px;
+}
+.progress-bar > div {
+  height: 100%; background: var(--gradient);
+  transition: width .4s ease;
+}
+
+/* ------------------------------- Player ---------------------------------- */
+.result-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.player-card { position: sticky; top: 20px; }
+.yt-frame, .audio-visual {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: #000;
+  margin-bottom: 16px;
+}
+.audio-visual {
+  display: grid; place-items: center;
+  background: var(--gradient);
+  position: relative; overflow: hidden;
+}
+.audio-visual .disc {
+  width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #333 0 22%, #111 22% 26%, #222 26%);
+  border: 6px solid rgba(0,0,0,.4);
+  animation: spin 4s linear infinite;
+  animation-play-state: paused;
+}
+.audio-visual.playing .disc { animation-play-state: running; }
+
+audio { width: 100%; margin-bottom: 8px; }
+
+.controls-row { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+.time-display { font-variant-numeric: tabular-nums; color: var(--text-1); font-size: 13px; }
+
+/* ------------------------------- Lyrics ---------------------------------- */
+.lyrics-card { min-height: 300px; }
+.lyrics-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+}
+.lyrics-scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 6px;
+  scroll-behavior: smooth;
+}
+.lyric-line {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+  color: var(--text-2);
+  font-size: 16px; line-height: 1.5;
+}
+.lyric-line:hover { background: var(--bg-2); color: var(--text-1); }
+.lyric-line.active {
+  background: rgba(139, 92, 246, 0.14);
+  color: var(--text-0);
+  font-weight: 600;
+  transform: scale(1.01);
+}
+.lyric-line.past { color: var(--text-2); }
+.lyric-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 12px; color: var(--text-2);
+  min-width: 52px; padding-top: 3px;
+}
+.lyric-line.active .lyric-time { color: var(--accent); }
+.lyric-text { flex: 1; }
+.lyric-edit-input {
+  width: 70px; font-size: 12px; padding: 4px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.lyric-text-input { width: 100%; font-size: 15px; padding: 6px 8px; }
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--text-0); padding: 12px 20px; border-radius: 12px;
+  box-shadow: var(--shadow); font-size: 14px; z-index: 50;
+  animation: rise .3s ease;
+}
+@keyframes rise { from { opacity: 0; transform: translate(-50%, 10px); } }
+
+.footer-note {
+  text-align: center; color: var(--text-2); font-size: 12px;
+  margin-top: 40px; line-height: 1.6;
+}
+.footer-note code {
+  background: var(--bg-2); padding: 2px 6px; border-radius: 5px;
+  color: var(--accent);
+}
+
+/* ------------------------------ Responsive ------------------------------- */
+@media (max-width: 860px) {
+  .grid { grid-template-columns: 1fr; }
+  .result-layout { grid-template-columns: 1fr; }
+  .player-card { position: static; }
+}
+
+/* Custom scrollbar */
+.lyrics-scroll::-webkit-scrollbar { width: 8px; }
+.lyrics-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.lyrics-scroll::-webkit-scrollbar-thumb:hover { background: var(--accent); }
