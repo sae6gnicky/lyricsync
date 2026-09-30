@@ -361,16 +361,31 @@ function setAudioFile(f){
 }
 function validAudio(f){ return /\.(mp3|wav|m4a)$/i.test(f.name)||(f.type||"").indexOf("audio/")===0; }
 
+// IMPORTANT: stop the browser from "opening" (i.e. playing) a file that is
+// dropped anywhere on the page, which otherwise navigates away from the app.
+["dragover","drop"].forEach(function(ev){
+  window.addEventListener(ev,function(e){ e.preventDefault(); },false);
+});
+
 (function wireInputs(){
   var dz=$("dropzone"),fi=$("fileInput");
+  // Click the dropzone → open the native file picker.
   dz.addEventListener("click",function(){ fi.click(); });
-  dz.addEventListener("dragover",function(e){ e.preventDefault(); dz.classList.add("drag"); });
-  dz.addEventListener("dragleave",function(){ dz.classList.remove("drag"); });
-  dz.addEventListener("drop",function(e){ e.preventDefault(); dz.classList.remove("drag");
-    var f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(!f)return;
-    if(!validAudio(f)){ alert("Please choose an MP3, WAV, or M4A audio file."); return; } setAudioFile(f); });
-  fi.addEventListener("change",function(e){ var f=e.target.files&&e.target.files[0]; if(!f)return;
-    if(!validAudio(f)){ alert("Please choose an MP3, WAV, or M4A audio file."); return; } setAudioFile(f); });
+  dz.addEventListener("dragover",function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add("drag"); });
+  dz.addEventListener("dragenter",function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add("drag"); });
+  dz.addEventListener("dragleave",function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.remove("drag"); });
+  dz.addEventListener("drop",function(e){
+    e.preventDefault(); e.stopPropagation(); dz.classList.remove("drag");
+    var dt=e.dataTransfer, f=null;
+    // Prefer the modern items API (more reliable across browsers), fall back to files.
+    if(dt && dt.items && dt.items.length){
+      for(var i=0;i<dt.items.length;i++){ if(dt.items[i].kind==="file"){ f=dt.items[i].getAsFile(); break; } }
+    }
+    if(!f && dt && dt.files && dt.files.length){ f=dt.files[0]; }
+    if(!f){ alert("No file detected. Try clicking the box to choose a file instead."); return; }
+    if(!validAudio(f)){ alert("Please choose an MP3, WAV, or M4A audio file."); return; }
+    setAudioFile(f);
+  });
 
   $("ytUrl").addEventListener("input",function(e){ state.youtubeUrl=e.target.value;
     if(e.target.value){ setAudioFile(null); state.youtubeUrl=e.target.value; } refreshMode(); });
