@@ -127,6 +127,23 @@ audio{width:100%;margin-bottom:8px;}
 .footer-note code{background:var(--bg-2);padding:2px 6px;border-radius:5px;color:var(--accent);}
 .hidden{display:none !important;}
 .err{color:var(--danger);font-size:14px;margin-top:12px;}
+/* Tap-to-sync panel */
+.tap-panel{margin-top:16px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg-2);padding:16px;}
+.tap-current{font-size:22px;font-weight:700;color:var(--text-0);text-align:center;
+  min-height:34px;line-height:1.35;margin:6px 0 4px;}
+.tap-next{font-size:14px;color:var(--text-2);text-align:center;min-height:20px;margin-bottom:14px;}
+.tap-progress{text-align:center;color:var(--text-2);font-size:12px;margin-bottom:12px;}
+.tap-btn{width:100%;padding:22px;font-size:18px;font-weight:800;border:none;border-radius:12px;
+  background:var(--gradient);color:#fff;cursor:pointer;box-shadow:0 8px 24px var(--accent-glow);
+  transition:transform .05s;}
+.tap-btn:active{transform:scale(.98);}
+.tap-btn:disabled{opacity:.5;cursor:not-allowed;}
+.tap-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.tap-controls .btn{flex:1;min-width:90px;}
+.tap-hint{color:var(--text-2);font-size:12px;text-align:center;margin-top:10px;line-height:1.5;}
+.tap-hint kbd{background:var(--bg-1);border:1px solid var(--border);border-radius:5px;
+  padding:1px 6px;font-size:11px;color:var(--text-1);}
 @media(max-width:860px){
   .grid{grid-template-columns:1fr;}
   .result-layout{grid-template-columns:1fr;}
@@ -220,11 +237,31 @@ Chasing every echo down the boulevard
       <div class="lyrics-header">
         <h3 class="section-title" style="margin:0;"><span>🎤</span> Synced Lyrics</h3>
         <div class="toolbar">
+          <button id="tapBtn" class="btn btn-primary">🎯 Tap to sync</button>
           <button id="editBtn" class="btn btn-ghost">✎ Edit timestamps</button>
           <button id="lrcBtn" class="btn btn-ghost">⬇ .lrc</button>
           <button id="srtBtn" class="btn btn-ghost">⬇ .srt</button>
         </div>
       </div>
+
+      <!-- Tap-to-sync panel: play the song and tap each line at the right moment -->
+      <div id="tapPanel" class="tap-panel hidden">
+        <div class="tap-progress"><span id="tapProgress">Line 0 / 0</span></div>
+        <div class="tap-current" id="tapCurrent">Press ▶ then tap to stamp the first line</div>
+        <div class="tap-next" id="tapNext"></div>
+        <button id="tapStampBtn" class="tap-btn">⏱️ Tap to stamp this line</button>
+        <div class="tap-controls">
+          <button id="tapPrevBtn" class="btn btn-ghost">↶ Undo last</button>
+          <button id="tapRestartBtn" class="btn btn-ghost">⟲ Restart</button>
+          <button id="tapDoneBtn" class="btn btn-ghost">✓ Finish</button>
+        </div>
+        <div class="tap-hint">
+          Play the audio above, and hit the big button (or press <kbd>Space</kbd>)
+          exactly when each line begins. The current playback time gets stamped to
+          that line, then it advances to the next.
+        </div>
+      </div>
+
       <div id="lyricsScroll" class="lyrics-scroll"></div>
       <button id="addLineBtn" class="btn btn-ghost hidden" style="margin-top:12px;"></button>
     </div>
@@ -319,7 +356,8 @@ function downloadText(filename,text){ var blob=new Blob([text],{type:"text/plain
    ========================================================================== */
 var state={ audioFile:null, youtubeUrl:"", rawLyrics:"",
   media:null, lyrics:[], currentTime:0, playing:false, editMode:false,
-  objectUrl:null, ytPlayer:null, ytPoll:null, audioEl:null };
+  objectUrl:null, ytPlayer:null, ytPoll:null, audioEl:null,
+  tapMode:false, tapIndex:0 };
 var $=function(id){return document.getElementById(id);};
 
 var STEP_LABELS={extract:"Extracting audio",upload:"Uploading media",
@@ -394,6 +432,18 @@ function validAudio(f){ return /\.(mp3|wav|m4a)$/i.test(f.name)||(f.type||"").in
   $("generateBtn").addEventListener("click",runPipeline);
   $("resetBtn").addEventListener("click",resetApp);
   $("editBtn").addEventListener("click",toggleEdit);
+  $("tapBtn").addEventListener("click",toggleTapMode);
+  $("tapStampBtn").addEventListener("click",tapStamp);
+  $("tapPrevBtn").addEventListener("click",tapUndo);
+  $("tapRestartBtn").addEventListener("click",tapRestart);
+  $("tapDoneBtn").addEventListener("click",function(){ toggleTapMode(); });
+  // Spacebar stamps the current line while in tap mode (but not while typing).
+  document.addEventListener("keydown",function(e){
+    if(!state.tapMode) return;
+    var tag=(e.target.tagName||"").toLowerCase();
+    if(tag==="input"||tag==="textarea") return;
+    if(e.code==="Space"||e.key===" "){ e.preventDefault(); tapStamp(); }
+  });
   $("lrcBtn").addEventListener("click",function(){ downloadText("lyrics.lrc",buildLRC(state.lyrics)); toast("Downloaded lyrics.lrc"); });
   $("srtBtn").addEventListener("click",function(){ downloadText("lyrics.srt",buildSRT(state.lyrics)); toast("Downloaded lyrics.srt"); });
   $("addLineBtn").addEventListener("click",function(){
@@ -511,7 +561,10 @@ function renderLyrics(){
   var act=activeIndex();
   state.lyrics.forEach(function(line,i){
     var row=document.createElement("div");
-    row.className="lyric-line"+(i===act?" active":(i<act?" past":""));
+    // In tap mode, highlight the line that is about to be stamped instead.
+    var isActive = state.tapMode ? (i===state.tapIndex) : (i===act);
+    var isPast   = state.tapMode ? (i<state.tapIndex)   : (i<act);
+    row.className="lyric-line"+(isActive?" active":(isPast?" past":""));
     if(state.editMode){
       var t=document.createElement("input"); t.className="lyric-edit-input"; t.value=fmtClock(line.time);
       t.addEventListener("blur",function(){ line.time=parseClockInput(t.value); renderLyrics(); });
@@ -555,6 +608,75 @@ function toggleEdit(){
   renderLyrics();
 }
 
+/* ==========================================================================
+   TAP-TO-SYNC  — play the song and tap each line to stamp its real start time.
+   This is the most accurate way to sync by hand (you hear it and mark it).
+   ========================================================================== */
+function toggleTapMode(){
+  state.tapMode=!state.tapMode;
+  // Tap and edit modes are mutually exclusive.
+  if(state.tapMode && state.editMode){ state.editMode=false;
+    $("editBtn").textContent="✎ Edit timestamps"; $("editBtn").className="btn btn-ghost";
+    $("addLineBtn").classList.add("hidden"); }
+  $("tapPanel").classList.toggle("hidden",!state.tapMode);
+  $("tapBtn").textContent=state.tapMode?"✓ Done tapping":"🎯 Tap to sync";
+  $("tapBtn").className="btn "+(state.tapMode?"btn-ghost":"btn-primary");
+  if(state.tapMode){
+    state.tapIndex=0;
+    // Rewind so the user can start from the top of the track.
+    if(state.audioEl){ state.audioEl.currentTime=0; }
+    tapRender();
+    toast("Play the song, then tap each line as it starts.");
+  }
+  renderLyrics();
+}
+
+function tapRender(){
+  var total=state.lyrics.length, i=state.tapIndex;
+  $("tapProgress").textContent="Line "+Math.min(i+1,total)+" / "+total;
+  if(i>=total){
+    $("tapCurrent").textContent="🎉 All lines stamped! Press Finish (or fine-tune below).";
+    $("tapNext").textContent="";
+    $("tapStampBtn").disabled=true;
+    return;
+  }
+  $("tapStampBtn").disabled=false;
+  $("tapCurrent").textContent=state.lyrics[i].text;
+  $("tapNext").textContent = (i+1<total) ? ("Next: "+state.lyrics[i+1].text) : "(last line)";
+  // Keep the corresponding line visible in the list below.
+  var rows=$("lyricsScroll").children;
+  if(rows[i]){ var c=$("lyricsScroll");
+    c.scrollTo({top:rows[i].offsetTop - c.clientHeight/2 + rows[i].clientHeight/2, behavior:"smooth"}); }
+}
+
+function tapStamp(){
+  if(state.tapIndex>=state.lyrics.length) return;
+  // Stamp the CURRENT playback time onto the current line.
+  var t=state.currentTime;
+  if(state.audioEl){ t=state.audioEl.currentTime; }        // most accurate source
+  else if(state.ytPlayer&&state.ytPlayer.getCurrentTime){ t=state.ytPlayer.getCurrentTime(); }
+  state.lyrics[state.tapIndex].time=+t.toFixed(2);
+  state.tapIndex++;
+  tapRender();
+  renderLyrics();
+  if(state.tapIndex>=state.lyrics.length) toast("Done! You can fine-tune any line in Edit mode.");
+}
+
+function tapUndo(){
+  if(state.tapIndex<=0){ toast("Nothing to undo yet."); return; }
+  state.tapIndex--;
+  tapRender();
+  renderLyrics();
+}
+
+function tapRestart(){
+  state.tapIndex=0;
+  if(state.audioEl){ state.audioEl.currentTime=0; }
+  tapRender();
+  renderLyrics();
+  toast("Restarted from the first line.");
+}
+
 /* ------------------------------ Misc ------------------------------------- */
 function toast(msg){ var t=document.createElement("div"); t.className="toast"; t.textContent=msg;
   document.body.appendChild(t); setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },2000); }
@@ -562,6 +684,9 @@ function toast(msg){ var t=document.createElement("div"); t.className="toast"; t
 function resetApp(){
   cleanupPlayer();
   state.media=null; state.lyrics=[]; state.currentTime=0; state.editMode=false;
+  state.tapMode=false; state.tapIndex=0;
+  $("tapPanel").classList.add("hidden");
+  $("tapBtn").textContent="🎯 Tap to sync"; $("tapBtn").className="btn btn-primary";
   $("playerMount").innerHTML=""; showStage("input");
 }
 
