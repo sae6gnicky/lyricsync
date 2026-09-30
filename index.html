@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LyricSync — AI Time-Synced Lyrics Generator</title>
+
+  <!--
+    ============================================================================
+    LyricSync — Single-file React app (no build step).
+    ----------------------------------------------------------------------------
+    Tech: React 18 + Babel (via CDN) so it runs by simply opening index.html
+          or serving the folder statically. For production you'd migrate this
+          into a Vite/CRA project (see README.md "Migrating to a build setup").
+
+    All AI/backend work (YouTube audio extraction, ASR transcription, forced
+    alignment) is MOCKED in api.js using setTimeout + dummy data. Search for
+    "INTEGRATION:" comments to see exactly where/how to plug in real APIs.
+    ============================================================================
+  -->
+
+  <!-- React + Babel (dev CDN builds; swap for a bundler in production) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- React mounts here -->
+  <div id="root"></div>
+
+  <!-- App source. type="text/babel" lets Babel transpile JSX in the browser. -->
+  <script type="text/babel" src="api.js" data-presets="env,react"></script>
+  <script type="text/babel" src="app.js" data-presets="env,react"></script>
+</body>
+</html>
