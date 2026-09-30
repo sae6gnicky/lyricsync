@@ -4,16 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LyricSync — AI Time-Synced Lyrics Generator</title>
-<!--
-  ============================================================================
-  LyricSync — SINGLE-FILE, NO-DEPENDENCY build (vanilla JS, no CDN).
-  Everything (HTML + CSS + JS) lives in this one file, so it loads reliably
-  anywhere (including GitHub Pages) with zero external requests.
-
-  The AI/backend work is MOCKED with setTimeout + dummy data. Search for
-  "INTEGRATION:" to see exactly where/how to plug in real APIs.
-  ============================================================================
--->
 <style>
 :root{
   --bg-0:#0a0a0f;--bg-1:#12121a;--bg-2:#1b1b26;--border:#2a2a3a;
@@ -159,10 +149,8 @@ audio{width:100%;margin-bottom:8px;}
     them from scratch — then fine-tune and export to <strong>.lrc</strong> or <strong>.srt</strong>.
   </p>
 
-  <!-- ============================ INPUT STAGE ============================ -->
   <div id="stage-input">
     <div class="grid">
-      <!-- Media input -->
       <div class="panel">
         <h3 class="section-title"><span>🎵</span> 1 · Media Input</h3>
         <div id="dropzone" class="dropzone">
@@ -177,7 +165,6 @@ audio{width:100%;margin-bottom:8px;}
         <input id="ytUrl" type="url" placeholder="https://www.youtube.com/watch?v=…" />
       </div>
 
-      <!-- Lyrics input -->
       <div class="panel">
         <h3 class="section-title"><span>📝</span> 2 · Lyrics Input <span class="badge-opt">optional</span></h3>
         <label class="field-label">Paste raw lyrics (one line per lyric). Leave empty to auto-transcribe.</label>
@@ -198,7 +185,6 @@ Chasing every echo down the boulevard
     </div>
   </div>
 
-  <!-- ========================= PROCESSING STAGE ========================= -->
   <div id="stage-processing" class="panel progress-wrap hidden">
     <h3 class="section-title"><span>⚙️</span> Processing</h3>
     <div id="progressSteps" class="progress-steps"></div>
@@ -206,16 +192,13 @@ Chasing every echo down the boulevard
     <p id="progressMsg" style="color:var(--text-1);font-size:14px;margin-top:14px;"></p>
   </div>
 
-  <!-- =========================== RESULT STAGE =========================== -->
   <div id="stage-result" class="result-layout hidden">
-    <!-- Player -->
     <div class="panel player-card">
       <h3 class="section-title"><span>▶️</span> Player</h3>
       <div id="playerMount"></div>
       <div class="controls-row"><span class="time-display">🕒 <span id="clock">0:00</span></span></div>
       <button id="resetBtn" class="btn btn-ghost btn-lg" style="margin-top:18px;">↩ Start over</button>
     </div>
-    <!-- Lyrics -->
     <div class="panel lyrics-card">
       <div class="lyrics-header">
         <h3 class="section-title" style="margin:0;"><span>🎤</span> Synced Lyrics</h3>
@@ -238,9 +221,6 @@ Chasing every echo down the boulevard
 
 <script>
 "use strict";
-/* ==========================================================================
-   MOCKED AI/BACKEND LAYER  (replace bodies with real backend calls)
-   ========================================================================== */
 var wait = function(ms){ return new Promise(function(res){ setTimeout(res, ms); }); };
 
 var DUMMY_TRANSCRIPTION = [
@@ -266,14 +246,14 @@ function parseYouTubeId(url){
   var bare=url.trim().match(/^[\w-]{11}$/); return bare?bare[0]:null;
 }
 
-// YouTube URL -> audio (MOCK).  INTEGRATION: call your backend POST /api/youtube/extract
+// YouTube URL -> audio (MOCK). INTEGRATION: call your backend POST /api/youtube/extract
 async function extractAudioFromYouTube(url,onProgress){
   onProgress("extract","Extracting audio from YouTube…");
   await wait(1800);
   return { type:"youtube", videoId:parseYouTubeId(url), audioUrl:null, durationSec:54 };
 }
 
-// MODE B — transcribe from scratch (MOCK).  INTEGRATION: OpenAI Whisper / Deepgram via backend
+// MODE B — transcribe from scratch (MOCK). INTEGRATION: OpenAI Whisper / Deepgram via backend
 async function transcribeAudio(source,onProgress){
   onProgress("upload","Uploading audio to transcription service…"); await wait(1200);
   onProgress("transcribe","Transcribing lyrics with AI (ASR)…");     await wait(2600);
@@ -281,7 +261,7 @@ async function transcribeAudio(source,onProgress){
   return DUMMY_TRANSCRIPTION.map(function(l){return {time:l.time,text:l.text};});
 }
 
-// MODE A — forced alignment of provided lyrics (MOCK).  INTEGRATION: WhisperX/gentle/aeneas via backend
+// MODE A — forced alignment of provided lyrics (MOCK). INTEGRATION: WhisperX/gentle/aeneas via backend
 async function alignLyricsToAudio(source,rawLyrics,onProgress){
   onProgress("upload","Uploading audio + lyrics for alignment…");        await wait(1200);
   onProgress("align","Aligning your lyrics to the audio track…");        await wait(2800);
@@ -292,9 +272,6 @@ async function alignLyricsToAudio(source,rawLyrics,onProgress){
   return lines.map(function(text,i){return {time:+(i*step).toFixed(2),text:text};});
 }
 
-/* ==========================================================================
-   HELPERS: time formatting + LRC/SRT builders + download
-   ========================================================================== */
 function pad(n,w){ n=String(n); while(n.length<w) n="0"+n; return n; }
 function fmtClock(sec){ if(!isFinite(sec)||sec<0) sec=0;
   return Math.floor(sec/60)+":"+pad(Math.floor(sec%60),2); }
@@ -322,9 +299,6 @@ function downloadText(filename,text){ var blob=new Blob([text],{type:"text/plain
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();
   document.body.removeChild(a);URL.revokeObjectURL(url); }
 
-/* ==========================================================================
-   APP STATE + DOM refs
-   ========================================================================== */
 var state={ audioFile:null, youtubeUrl:"", rawLyrics:"",
   media:null, lyrics:[], currentTime:0, playing:false, editMode:false,
   objectUrl:null, ytPlayer:null, ytPoll:null, audioEl:null };
@@ -334,14 +308,12 @@ var STEP_LABELS={extract:"Extracting audio",upload:"Uploading media",
   transcribe:"Transcribing lyrics (ASR)",align:"Aligning lyrics to audio",
   timestamps:"Generating timestamps"};
 
-/* ---------------------------- Stage switching ---------------------------- */
 function showStage(name){
   $("stage-input").classList.toggle("hidden",name!=="input");
   $("stage-processing").classList.toggle("hidden",name!=="processing");
   $("stage-result").classList.toggle("hidden",name!=="result");
 }
 
-/* ------------------------------ Mode note -------------------------------- */
 function refreshMode(){
   var hasMedia=!!state.audioFile||!!state.youtubeUrl.trim();
   var hasLyrics=state.rawLyrics.trim().length>0;
@@ -351,7 +323,6 @@ function refreshMode(){
     : "Detected mode: <strong>Mode B · Auto-Transcribe (ASR)</strong> — lyrics will be transcribed and timed automatically.";
 }
 
-/* --------------------------- Input wiring -------------------------------- */
 function setAudioFile(f){
   state.audioFile=f; state.youtubeUrl=""; $("ytUrl").value="";
   var chip=$("fileChip");
@@ -361,15 +332,13 @@ function setAudioFile(f){
 }
 function validAudio(f){ return /\.(mp3|wav|m4a)$/i.test(f.name)||(f.type||"").indexOf("audio/")===0; }
 
-// IMPORTANT: stop the browser from "opening" (i.e. playing) a file that is
-// dropped anywhere on the page, which otherwise navigates away from the app.
+// IMPORTANT: stop the browser from opening/playing a file dropped anywhere on the page.
 ["dragover","drop"].forEach(function(ev){
   window.addEventListener(ev,function(e){ e.preventDefault(); },false);
 });
 
 (function wireInputs(){
   var dz=$("dropzone"),fi=$("fileInput");
-  // Click the dropzone → open the native file picker.
   dz.addEventListener("click",function(){ fi.click(); });
   dz.addEventListener("dragover",function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add("drag"); });
   dz.addEventListener("dragenter",function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.add("drag"); });
@@ -377,7 +346,6 @@ function validAudio(f){ return /\.(mp3|wav|m4a)$/i.test(f.name)||(f.type||"").in
   dz.addEventListener("drop",function(e){
     e.preventDefault(); e.stopPropagation(); dz.classList.remove("drag");
     var dt=e.dataTransfer, f=null;
-    // Prefer the modern items API (more reliable across browsers), fall back to files.
     if(dt && dt.items && dt.items.length){
       for(var i=0;i<dt.items.length;i++){ if(dt.items[i].kind==="file"){ f=dt.items[i].getAsFile(); break; } }
     }
@@ -386,6 +354,8 @@ function validAudio(f){ return /\.(mp3|wav|m4a)$/i.test(f.name)||(f.type||"").in
     if(!validAudio(f)){ alert("Please choose an MP3, WAV, or M4A audio file."); return; }
     setAudioFile(f);
   });
+  fi.addEventListener("change",function(e){ var f=e.target.files&&e.target.files[0]; if(!f)return;
+    if(!validAudio(f)){ alert("Please choose an MP3, WAV, or M4A audio file."); return; } setAudioFile(f); });
 
   $("ytUrl").addEventListener("input",function(e){ state.youtubeUrl=e.target.value;
     if(e.target.value){ setAudioFile(null); state.youtubeUrl=e.target.value; } refreshMode(); });
@@ -407,7 +377,6 @@ function validAudio(f){ return /\.(mp3|wav|m4a)$/i.test(f.name)||(f.type||"").in
   refreshMode();
 })();
 
-/* --------------------------- Processing pipeline ------------------------- */
 function renderSteps(steps,currentKey){
   var wrap=$("progressSteps"); wrap.innerHTML="";
   var curIdx=steps.indexOf(currentKey);
@@ -460,7 +429,6 @@ async function runPipeline(){
   }
 }
 
-/* ------------------------------ Player ----------------------------------- */
 function buildPlayer(){
   var mount=$("playerMount"); mount.innerHTML="";
   cleanupPlayer();
@@ -505,7 +473,6 @@ function seekTo(t){
   state.currentTime=t; onTimeUpdate();
 }
 
-/* ------------------------------ Lyrics ----------------------------------- */
 function activeIndex(){ var idx=-1;
   for(var i=0;i<state.lyrics.length;i++){ if(state.currentTime>=state.lyrics[i].time) idx=i; else break; }
   return idx; }
@@ -559,7 +526,6 @@ function toggleEdit(){
   renderLyrics();
 }
 
-/* ------------------------------ Misc ------------------------------------- */
 function toast(msg){ var t=document.createElement("div"); t.className="toast"; t.textContent=msg;
   document.body.appendChild(t); setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },2000); }
 
